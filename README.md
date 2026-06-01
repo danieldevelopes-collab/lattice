@@ -2,7 +2,7 @@
 
 **A spreadsheet, rebuilt from first principles in Rust — a fast, sparse calc engine with Excel-accurate formulas and dependency-ordered recalculation, wrapped in a desktop grid.**
 
-**By Daniel Bratcher · [@danieldevelopes-collab](https://github.com/danieldevelopes-collab)** · MIT · Rust + Tauri
+**By Daniel Bracher · [@danieldevelopes-collab](https://github.com/danieldevelopes-collab)** · MIT · Rust + Tauri
 
 ![lattice](docs/grid.png)
 
@@ -268,4 +268,4 @@ What is done is done carefully. What isn't, I've tried to be upfront about here.
 
 ## License
 
-MIT © 2026 **Daniel Bratcher** ([@danieldevelopes-collab](https://github.com/danieldevelopes-collab)).
+MIT © 2026 **Daniel Bracher** ([@danieldevelopes-collab](https://github.com/danieldevelopes-collab)).

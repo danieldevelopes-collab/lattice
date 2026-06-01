@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "lattice — a spreadsheet with a Rust engine and a Tauri web UI."
 license = "MIT"
-authors = ["Daniel Bratcher"]
+authors = ["Daniel Bracher"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

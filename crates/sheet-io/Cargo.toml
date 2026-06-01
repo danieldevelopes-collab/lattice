@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 description = "Persistence and interop for lattice workbooks: CSV, XLSX, ODS and native JSON."
-authors = ["Daniel Bratcher"]
+authors = ["Daniel Bracher"]
 
 [lib]
 name = "sheet_io"
