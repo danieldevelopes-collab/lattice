@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/sheet-core", "crates/sheet-io"]
+members = ["crates/sheet-core", "crates/sheet-io", "src-tauri"]
 
 [profile.release]
 opt-level = 3

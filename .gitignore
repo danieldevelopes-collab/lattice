@@ -1,5 +1,19 @@
+# Rust / Cargo
 /target
 **/target/
+**/*.rs.bk
+Cargo.lock.bak
+
+# Tauri generated
+src-tauri/gen/
+
+# macOS / editors
 .DS_Store
 .vscode/
 .idea/
+
+# node (not used; here only in case)
+node_modules/
+
+# Claude / preview dev config
+.claude/

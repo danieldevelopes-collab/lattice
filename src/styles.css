@@ -1,0 +1,246 @@
+/* Lattice — calm light spreadsheet theme */
+
+:root {
+  --bg: #ffffff;
+  --bg-toolbar: #f7f8fa;
+  --bg-sunken: #f1f3f5;
+  --border: #e3e6ea;
+  --border-strong: #d4d8dd;
+  --grid-line: #e7eaed;
+  --grid-line-strong: #d8dce1;
+  --header-bg: #f6f7f9;
+  --header-fg: #57606a;
+  --header-active-bg: #e8effb;
+  --header-active-fg: #1a56db;
+  --text: #1f2328;
+  --text-muted: #6e7781;
+  --accent: #1a73e8;
+  --accent-soft: rgba(26, 115, 232, 0.10);
+  --selection-fill: rgba(26, 115, 232, 0.10);
+  --btn-hover: #eceef1;
+  --btn-active: #e2e5e9;
+  --shadow: 0 6px 22px rgba(15, 23, 42, 0.14);
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ---------- Toolbar ---------- */
+#toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 46px;
+  padding: 0 10px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+  flex: 0 0 auto;
+}
+
+.tb-group { display: flex; align-items: center; gap: 3px; }
+.tb-group.right { gap: 7px; }
+.tb-spacer { flex: 1 1 auto; }
+
+.tb-sep {
+  width: 1px;
+  height: 24px;
+  background: var(--border-strong);
+  margin: 0 7px;
+}
+.tb-sep.small { margin: 0 4px; height: 20px; }
+
+.tb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.tb-btn:hover { background: var(--btn-hover); }
+.tb-btn:active { background: var(--btn-active); }
+.tb-btn svg { display: block; color: var(--header-fg); }
+.tb-btn.icon-only { padding: 0; width: 30px; justify-content: center; font-size: 14px; }
+.tb-btn.icon-only b, .tb-btn.icon-only i { font-style: normal; }
+.tb-btn.icon-only i { font-style: italic; }
+.tb-btn[aria-pressed="true"] { background: var(--accent-soft); border-color: rgba(26,115,232,0.25); color: var(--accent); }
+.tb-btn .caret { color: var(--header-fg); margin-left: -2px; }
+.tb-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Save-as dropdown */
+.menu-wrap { position: relative; }
+.menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  min-width: 184px;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  box-shadow: var(--shadow);
+  padding: 5px;
+  z-index: 40;
+}
+.menu[hidden] { display: none; }
+.menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.menu-item:hover { background: var(--accent-soft); color: var(--accent); }
+
+.sheet-tag { display: inline-flex; color: var(--header-fg); }
+.sheet-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Formula bar ---------- */
+#formula-bar {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 10px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+  gap: 0;
+}
+.cell-ref {
+  min-width: 64px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 8px;
+  user-select: none;
+}
+.fx-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  color: var(--header-fg);
+}
+.formula-input {
+  flex: 1 1 auto;
+  height: 26px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 0 8px;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  outline: none;
+}
+.formula-input:focus { background: var(--bg); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* ---------- Grid ---------- */
+#grid-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  overflow: hidden;
+  background: var(--bg);
+  min-height: 0;
+}
+#grid-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  z-index: 1;
+}
+/* The scroller sits on top to own the scrollbar + wheel/keyboard; transparent. */
+#scroller {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  z-index: 2;
+  outline: none;
+}
+#scroll-spacer { width: 1px; height: 1px; }
+
+.cell-editor {
+  position: absolute;
+  z-index: 5;
+  margin: 0;
+  border: 2px solid var(--accent);
+  border-radius: 0;
+  padding: 0 4px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  outline: none;
+  box-shadow: 0 1px 6px rgba(15, 23, 42, 0.18);
+}
+.cell-editor[hidden] { display: none; }
+
+/* ---------- Status bar ---------- */
+#statusbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 26px;
+  padding: 0 12px;
+  background: var(--bg-toolbar);
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+  flex: 0 0 auto;
+  user-select: none;
+}
+.status-item { white-space: nowrap; }
+.status-item.muted { color: var(--text-muted); }
+#status-sel { font-family: var(--mono); font-weight: 600; color: var(--text); }
+.status-sep { width: 1px; height: 13px; background: var(--border-strong); }
+.status-spacer { flex: 1 1 auto; }

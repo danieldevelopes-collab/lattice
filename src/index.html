@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lattice</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Toolbar -->
+    <header id="toolbar">
+      <div class="tb-group">
+        <button id="btn-new" class="tb-btn" type="button" title="New workbook">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="M9 1.5H4.5A1.5 1.5 0 0 0 3 3v10a1.5 1.5 0 0 0 1.5 1.5h7A1.5 1.5 0 0 0 13 13V5.5L9 1.5Z" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+            <path d="M9 1.5V5.5H13" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+          </svg>
+          <span>New</span>
+        </button>
+        <button id="btn-open" class="tb-btn" type="button" title="Open workbook">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="M1.5 4.5A1 1 0 0 1 2.5 3.5H6L7.5 5.2H13.5A1 1 0 0 1 14.5 6.2V11.5A1 1 0 0 1 13.5 12.5H2.5A1 1 0 0 1 1.5 11.5Z" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+          </svg>
+          <span>Open</span>
+        </button>
+
+        <div id="saveas-wrap" class="menu-wrap">
+          <button id="btn-saveas" class="tb-btn" type="button" aria-haspopup="true" aria-expanded="false" title="Save as">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+              <path d="M3 2.5h7.5L13.5 5.5V13a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5Z" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+              <path d="M5 2.5v3h5v-3M5 13.5V9.5h6v4" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+            </svg>
+            <span>Save as</span>
+            <svg class="caret" viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div id="saveas-menu" class="menu" role="menu" hidden>
+            <button class="menu-item" role="menuitem" type="button" data-format="csv">CSV (.csv)</button>
+            <button class="menu-item" role="menuitem" type="button" data-format="xlsx">Excel (.xlsx)</button>
+            <button class="menu-item" role="menuitem" type="button" data-format="ods">OpenDocument (.ods)</button>
+            <button class="menu-item" role="menuitem" type="button" data-format="json">JSON (.json)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tb-sep" aria-hidden="true"></div>
+
+      <div class="tb-group">
+        <button id="btn-bold" class="tb-btn icon-only" type="button" title="Bold" aria-pressed="false"><b>B</b></button>
+        <button id="btn-italic" class="tb-btn icon-only" type="button" title="Italic" aria-pressed="false"><i>I</i></button>
+        <div class="tb-sep small" aria-hidden="true"></div>
+        <button id="btn-align-left" class="tb-btn icon-only" type="button" title="Align left">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M2 4h12M2 7.3h8M2 10.6h10M2 13.9h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </button>
+        <button id="btn-align-center" class="tb-btn icon-only" type="button" title="Align center">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M2 4h12M4 7.3h8M3 10.6h10M5 13.9h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </button>
+        <button id="btn-align-right" class="tb-btn icon-only" type="button" title="Align right">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M2 4h12M6 7.3h8M4 10.6h10M8 13.9h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <div class="tb-spacer"></div>
+
+      <div class="tb-group right">
+        <span class="sheet-tag" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.1"/><path d="M2 6.2h12M6 2.5v11" stroke="currentColor" stroke-width="1.1"/></svg>
+        </span>
+        <span id="sheet-name" class="sheet-name">Sheet1</span>
+      </div>
+    </header>
+
+    <!-- Formula bar -->
+    <div id="formula-bar">
+      <div id="cell-ref" class="cell-ref">A1</div>
+      <div class="fx-mark" aria-hidden="true">
+        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M9.5 3.2C9.5 2.4 9 2 8.3 2c-1.1 0-1.6.8-1.8 2L6 6H4.4v1.4H5.8l-.7 4.2c-.2 1-.4 1.3-.9 1.3-.3 0-.5-.1-.7-.3l-.6 1.1c.3.3.8.5 1.4.5 1.2 0 1.8-.8 2-2.2l.8-4.6h1.8V6.0H7.5l.2-1.2c.1-.7.3-.9.7-.9.2 0 .4.1.5.2l.6-1.1Z" fill="currentColor"/></svg>
+      </div>
+      <input id="formula-input" class="formula-input" type="text" spellcheck="false" autocomplete="off" aria-label="Formula bar" placeholder="" />
+    </div>
+
+    <!-- Grid -->
+    <div id="grid-wrap">
+      <canvas id="grid-canvas"></canvas>
+      <!-- Scroll surface: a real scrollbar driven by an oversized spacer -->
+      <div id="scroller" tabindex="0" aria-label="Spreadsheet grid">
+        <div id="scroll-spacer"></div>
+      </div>
+      <!-- In-cell editor overlay -->
+      <input id="cell-editor" class="cell-editor" type="text" spellcheck="false" autocomplete="off" hidden aria-label="Cell editor" />
+    </div>
+
+    <!-- Status bar -->
+    <footer id="statusbar">
+      <span id="status-sel" class="status-item">A1</span>
+      <span class="status-sep" aria-hidden="true"></span>
+      <span id="status-msg" class="status-item muted">Ready</span>
+      <span class="status-spacer"></span>
+      <span id="status-mode" class="status-item muted">Offline workbook</span>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
