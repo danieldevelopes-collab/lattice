@@ -6,8 +6,9 @@
 //! input with an `Empty` value until the formula engine (M2) and recalculation
 //! (M3) bring them to life.
 
+use crate::ast::Expr;
 use crate::cellref::CellRef;
-use crate::value::Value;
+use crate::value::{CellError, Value};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -18,6 +19,10 @@ pub struct Cell {
     pub input: String,
     /// The computed value shown in the grid.
     pub value: Value,
+    /// The parsed formula, when `input` begins with `=`. Re-parsed from `input`
+    /// on load, so it is not serialized; `None` for plain literals.
+    #[serde(skip)]
+    pub ast: Option<Expr>,
 }
 
 impl Cell {
@@ -46,12 +51,16 @@ impl Sheet {
             self.cells.remove(&at);
             return;
         }
-        let value = if input.starts_with('=') && input.len() > 1 {
-            Value::Empty // evaluated by the formula engine (M2/M3)
+        let (value, ast) = if input.starts_with('=') && input.len() > 1 {
+            match crate::parser::parse_formula(&input) {
+                // a freshly parsed formula has no value until recalc (M3) runs
+                Ok(ast) => (Value::Empty, Some(ast)),
+                Err(_) => (Value::Error(CellError::Value), None),
+            }
         } else {
-            Value::parse_literal(&input)
+            (Value::parse_literal(&input), None)
         };
-        self.cells.insert(at, Cell { input, value });
+        self.cells.insert(at, Cell { input, value, ast });
     }
 
     pub fn set_a1(&mut self, a1: &str, input: impl Into<String>) -> bool {
@@ -143,5 +152,39 @@ impl Workbook {
     }
     pub fn active_sheet_mut(&mut self) -> &mut Sheet {
         &mut self.sheets[self.active]
+    }
+
+    /// Evaluate a single cell's formula against the *current* cell values.
+    /// This does not order recalculation (that is M3) — it simply computes one
+    /// cell. Literals return their stored value.
+    pub fn evaluate(&self, sheet_idx: usize, at: CellRef) -> Value {
+        let cell = match self.sheet(sheet_idx).and_then(|s| s.get(at)) {
+            Some(c) => c,
+            None => return Value::Empty,
+        };
+        match &cell.ast {
+            Some(ast) => crate::eval::eval(ast, &WorkbookContext { wb: self, sheet: sheet_idx }),
+            None => cell.value.clone(),
+        }
+    }
+}
+
+/// A read-only evaluation context over a workbook: unqualified references
+/// resolve against `sheet`, qualified ones (`Sheet2!A1`) against that sheet.
+pub struct WorkbookContext<'a> {
+    pub wb: &'a Workbook,
+    pub sheet: usize,
+}
+
+impl crate::eval::Context for WorkbookContext<'_> {
+    fn cell_value(&self, sheet: Option<&str>, at: CellRef) -> Value {
+        let idx = match sheet {
+            None => self.sheet,
+            Some(name) => match self.wb.index_of(name) {
+                Some(i) => i,
+                None => return Value::Error(CellError::Ref),
+            },
+        };
+        self.wb.sheet(idx).map(|s| s.value(at)).unwrap_or(Value::Empty)
     }
 }

@@ -9,12 +9,20 @@
 //! dependency graph and incremental recalculation · M4+ the function library,
 //! number formats and file interop.
 
+pub mod ast;
 pub mod cellref;
+pub mod eval;
+pub mod functions;
+pub mod lexer;
 pub mod model;
+pub mod parser;
 pub mod value;
 
+pub use ast::Expr;
 pub use cellref::{col_to_letters, letters_to_col, parse_a1, A1, CellRef, Range};
-pub use model::{Cell, Sheet, Workbook};
+pub use eval::{eval, Context};
+pub use model::{Cell, Sheet, Workbook, WorkbookContext};
+pub use parser::parse_formula;
 pub use value::{format_number, CellError, Value};
 
 #[cfg(test)]
@@ -150,5 +158,178 @@ mod tests {
         assert_eq!(wb.index_of("Budget"), Some(1));
         wb.sheet_mut(1).unwrap().set_a1("A1", "10");
         assert_eq!(wb.sheet(1).unwrap().value(CellRef::new(0, 0)), Value::Number(10.0));
+    }
+
+    // ---- M2: the formula engine --------------------------------------------
+
+    use std::collections::HashMap;
+
+    struct Grid(HashMap<CellRef, Value>);
+    impl Grid {
+        fn from(pairs: &[(&str, Value)]) -> Grid {
+            let mut m = HashMap::new();
+            for (a1, v) in pairs {
+                m.insert(CellRef::parse(a1).unwrap(), v.clone());
+            }
+            Grid(m)
+        }
+    }
+    impl crate::eval::Context for Grid {
+        fn cell_value(&self, _sheet: Option<&str>, at: CellRef) -> Value {
+            self.0.get(&at).cloned().unwrap_or(Value::Empty)
+        }
+    }
+    fn empty() -> Grid {
+        Grid(HashMap::new())
+    }
+    fn ev(f: &str, g: &Grid) -> Value {
+        eval(&parse_formula(f).unwrap(), g)
+    }
+    fn num(f: &str, g: &Grid) -> f64 {
+        match ev(f, g) {
+            Value::Number(n) => n,
+            other => panic!("expected a number from {f}, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn arithmetic_and_precedence() {
+        let g = empty();
+        assert_eq!(num("=1+2*3", &g), 7.0);
+        assert_eq!(num("=(1+2)*3", &g), 9.0);
+        assert_eq!(num("=2^3^2", &g), 64.0); // ^ is left-associative: (2^3)^2
+        assert_eq!(num("=-2^2", &g), 4.0); // Excel: unary minus binds tighter than ^
+        assert_eq!(num("=2^-2", &g), 0.25);
+        assert_eq!(num("=10/4", &g), 2.5);
+        assert_eq!(num("=10%", &g), 0.1);
+        assert_eq!(num("=50%*4", &g), 2.0);
+    }
+
+    #[test]
+    fn division_by_zero_propagates() {
+        assert_eq!(ev("=1/0", &empty()), Value::Error(CellError::Div0));
+        assert_eq!(ev("=5 + 1/0", &empty()), Value::Error(CellError::Div0));
+    }
+
+    #[test]
+    fn concat_and_comparisons() {
+        let g = empty();
+        assert_eq!(ev("=\"a\"&\"b\"&1", &g), Value::Text("ab1".into()));
+        assert_eq!(ev("=1<2", &g), Value::Bool(true));
+        assert_eq!(ev("=2<=2", &g), Value::Bool(true));
+        assert_eq!(ev("=3<>3", &g), Value::Bool(false));
+        assert_eq!(ev("=\"x\"=\"X\"", &g), Value::Bool(true)); // case-insensitive text
+    }
+
+    #[test]
+    fn references_resolve() {
+        let g = Grid::from(&[("A1", Value::Number(10.0)), ("B1", Value::Number(5.0))]);
+        assert_eq!(num("=A1+B1", &g), 15.0);
+        assert_eq!(num("=A1*2", &g), 20.0);
+        assert_eq!(num("=$A$1-B1", &g), 5.0);
+    }
+
+    #[test]
+    fn aggregates_over_ranges() {
+        let g = Grid::from(&[
+            ("A1", Value::Number(1.0)),
+            ("A2", Value::Number(2.0)),
+            ("A3", Value::Number(3.0)),
+        ]);
+        assert_eq!(num("=SUM(A1:A3)", &g), 6.0);
+        assert_eq!(num("=SUM(A1:A3, 10)", &g), 16.0);
+        assert_eq!(num("=AVERAGE(A1:A3)", &g), 2.0);
+        assert_eq!(num("=MAX(A1:A3)", &g), 3.0);
+        assert_eq!(num("=MIN(A1:A3)", &g), 1.0);
+        assert_eq!(num("=COUNT(A1:A3)", &g), 3.0);
+        assert_eq!(num("=PRODUCT(A1:A3)", &g), 6.0);
+    }
+
+    #[test]
+    fn text_in_ranges_ignored_by_sum() {
+        let g = Grid::from(&[
+            ("A1", Value::Number(1.0)),
+            ("A2", Value::Text("x".into())),
+            ("A3", Value::Number(2.0)),
+        ]);
+        assert_eq!(num("=SUM(A1:A3)", &g), 3.0);
+        assert_eq!(num("=COUNT(A1:A3)", &g), 2.0);
+        assert_eq!(num("=COUNTA(A1:A3)", &g), 3.0);
+    }
+
+    #[test]
+    fn if_is_lazy() {
+        let g = Grid::from(&[("A1", Value::Number(10.0))]);
+        assert_eq!(ev("=IF(A1>5, \"big\", \"small\")", &g), Value::Text("big".into()));
+        assert_eq!(num("=IF(FALSE, 1/0, 99)", &g), 99.0); // untaken 1/0 not evaluated
+    }
+
+    #[test]
+    fn iferror_recovers() {
+        assert_eq!(ev("=IFERROR(1/0, \"oops\")", &empty()), Value::Text("oops".into()));
+        assert_eq!(num("=IFERROR(5, 0)", &empty()), 5.0);
+    }
+
+    #[test]
+    fn math_functions() {
+        let g = empty();
+        assert_eq!(num("=ABS(-5)", &g), 5.0);
+        assert_eq!(num("=SQRT(9)", &g), 3.0);
+        assert_eq!(ev("=SQRT(-1)", &g), Value::Error(CellError::Num));
+        assert_eq!(num("=MOD(7,3)", &g), 1.0);
+        assert_eq!(num("=POWER(2,10)", &g), 1024.0);
+        assert!((num("=ROUND(3.14159, 2)", &g) - 3.14).abs() < 1e-9);
+        assert_eq!(num("=INT(3.9)", &g), 3.0);
+    }
+
+    #[test]
+    fn text_functions() {
+        let g = empty();
+        assert_eq!(num("=LEN(\"hello\")", &g), 5.0);
+        assert_eq!(ev("=UPPER(\"abc\")", &g), Value::Text("ABC".into()));
+        assert_eq!(ev("=LOWER(\"ABC\")", &g), Value::Text("abc".into()));
+        assert_eq!(ev("=CONCAT(\"a\", 1, \"b\")", &g), Value::Text("a1b".into()));
+        assert_eq!(ev("=TRIM(\"  a   b \")", &g), Value::Text("a b".into()));
+    }
+
+    #[test]
+    fn logical_functions() {
+        let g = empty();
+        assert_eq!(ev("=AND(1>0, 2>1)", &g), Value::Bool(true));
+        assert_eq!(ev("=AND(1>0, 2<1)", &g), Value::Bool(false));
+        assert_eq!(ev("=OR(FALSE, FALSE)", &g), Value::Bool(false));
+        assert_eq!(ev("=NOT(1>0)", &g), Value::Bool(false));
+    }
+
+    #[test]
+    fn unknown_names_and_error_propagation() {
+        assert_eq!(ev("=FOO(1)", &empty()), Value::Error(CellError::Name));
+        assert_eq!(ev("=undefined", &empty()), Value::Error(CellError::Name));
+        assert_eq!(ev("=1 + SQRT(-1)", &empty()), Value::Error(CellError::Num));
+    }
+
+    #[test]
+    fn nested_calls() {
+        let g = Grid::from(&[
+            ("A1", Value::Number(1.0)),
+            ("A2", Value::Number(2.0)),
+            ("A3", Value::Number(6.0)),
+        ]);
+        assert_eq!(num("=ROUND(AVERAGE(A1:A3), 0)", &g), 3.0);
+        assert_eq!(num("=SUM(A1:A3) * 2 + MAX(A1:A3)", &g), 24.0);
+    }
+
+    #[test]
+    fn workbook_evaluates_a_formula_cell() {
+        let mut wb = Workbook::new();
+        {
+            let s = wb.active_sheet_mut();
+            s.set_a1("A1", "10");
+            s.set_a1("B1", "20");
+            s.set_a1("C1", "=A1+B1");
+        }
+        let c1 = CellRef::parse("C1").unwrap();
+        assert_eq!(wb.evaluate(0, c1), Value::Number(30.0));
+        assert!(wb.active_sheet().get(c1).unwrap().ast.is_some());
     }
 }
