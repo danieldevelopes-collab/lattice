@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 description = "The spreadsheet engine behind lattice: the cell model, A1 addressing, values, a formula language and incremental recalculation."
-authors = ["Daniel Bratcher"]
+authors = ["Daniel Bracher"]
 
 [lib]
 name = "sheet_core"
