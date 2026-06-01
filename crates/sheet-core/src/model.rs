@@ -86,6 +86,20 @@ impl Sheet {
         self.cells.remove(&at);
     }
 
+    /// Overwrite only the *computed value* of a cell, leaving its input and
+    /// parsed formula untouched. Used by the recalculation engine to write
+    /// results back. Creates a value-only cell if none exists.
+    pub fn set_computed(&mut self, at: CellRef, value: Value) {
+        self.cells.entry(at).or_default().value = value;
+    }
+
+    /// All formula cells on the sheet, as `(coordinate, &Expr)`.
+    pub fn formula_cells(&self) -> impl Iterator<Item = (CellRef, &Expr)> {
+        self.cells
+            .iter()
+            .filter_map(|(at, c)| c.ast.as_ref().map(|ast| (*at, ast)))
+    }
+
     pub fn len(&self) -> usize {
         self.cells.len()
     }
@@ -152,6 +166,20 @@ impl Workbook {
     }
     pub fn active_sheet_mut(&mut self) -> &mut Sheet {
         &mut self.sheets[self.active]
+    }
+
+    /// Recompute every formula cell on one sheet in dependency order, writing
+    /// each result back. A thin wrapper over [`crate::recalc::recalculate`].
+    pub fn recalculate(&mut self, sheet_idx: usize) {
+        crate::recalc::recalculate(self, sheet_idx);
+    }
+
+    /// Recompute every sheet in the workbook. Used after loading a file so that
+    /// formula cells (stored only as input text) gain their values.
+    pub fn recalculate_all(&mut self) {
+        for i in 0..self.sheets.len() {
+            crate::recalc::recalculate(self, i);
+        }
     }
 
     /// Evaluate a single cell's formula against the *current* cell values.

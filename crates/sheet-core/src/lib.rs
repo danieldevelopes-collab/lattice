@@ -12,17 +12,23 @@
 pub mod ast;
 pub mod cellref;
 pub mod eval;
+pub mod format;
 pub mod functions;
 pub mod lexer;
 pub mod model;
 pub mod parser;
+pub mod recalc;
+pub mod style;
 pub mod value;
 
 pub use ast::Expr;
 pub use cellref::{col_to_letters, letters_to_col, parse_a1, A1, CellRef, Range};
 pub use eval::{eval, Context};
+pub use format::{format_value, presets};
 pub use model::{Cell, Sheet, Workbook, WorkbookContext};
 pub use parser::parse_formula;
+pub use recalc::recalculate;
+pub use style::{HAlign, Style, StyleId, StyleTable, VAlign};
 pub use value::{format_number, CellError, Value};
 
 #[cfg(test)]
